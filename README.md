@@ -14,7 +14,7 @@ Highly customizable and extensible with plugins and JavaScript mods.
 
 ## Download
 
-Get the latest APK from [Releases](https://github.com/kotlalipopus/Expressive-Keyboard/releases/latest).
+Get the latest APK from [Releases](https://github.com/NguyenHuann/Expressive-Keyboard/releases/latest).
 
 Requires Android 8.0 or newer.
 
@@ -36,17 +36,17 @@ Requires Android 8.0 or newer.
 
 ## Installation
 
-1. Download and install the APK from [Releases](https://github.com/kotlalipopus/Expressive-Keyboard/releases/latest).
+1. Download and install the APK from [Releases](https://github.com/NguyenHuann/Expressive-Keyboard/releases/latest).
 2. Open the app and enable the keyboard in system settings.
 3. Select Expressive Keyboard as your input method.
 
 ## Permissions
 
-| Permission | Why |
-|---|---|
-| Internet | GIFs (Giphy), translator, downloading suggestion dictionaries, mods with the `network` permission |
-| Microphone | Voice input |
-| Vibration | Haptic feedback on key press |
+| Permission | Why                                                                                               |
+| ---------- | ------------------------------------------------------------------------------------------------- |
+| Internet   | GIFs (Giphy), translator, downloading suggestion dictionaries, mods with the `network` permission |
+| Microphone | Voice input                                                                                       |
+| Vibration  | Haptic feedback on key press                                                                      |
 
 Your typed text is not sent anywhere unless you use the translator yourself or install a mod
 that has both network and text-reading permissions.
