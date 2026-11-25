@@ -268,6 +268,15 @@ class ComposeKeyboardService : InputMethodService(),
     private var rawComposing = ""
     /** Состояние текущего слова для вьетнамского Telex (C1/V/C2/T/M, автовосстановление и diff-отрисовка). */
     private val telex = Telex.Session()
+    // Chỉ tra khớp chính xác để phân biệt issue/isue sau hủy dấu; không phụ thuộc từ điển
+    // gợi ý đã tải xong hay việc người dùng có bật bàn phím tiếng Anh hay không.
+    private val telexEnglishWords by lazy {
+        runCatching {
+            assets.open("dict/en.txt").bufferedReader().useLines { lines ->
+                lines.map { it.trim() }.filter { it.isNotEmpty() }.toList().toTypedArray().also { it.sort() }
+            }
+        }.getOrDefault(emptyArray())
+    }
     private var telexComposing = false
     /** Точка касания последней клавиши и касания по буквам текущего слова (для автоисправления). */
     private var pendingTouch: KeyTouch? = null
@@ -441,6 +450,7 @@ class ComposeKeyboardService : InputMethodService(),
         // язык, на котором закончили в прошлый раз
         val enabled = Languages.enabled(settings)
         kb.language = dataPrefs().getString("last_language", null)?.let { id -> enabled.firstOrNull { it.id == id } } ?: enabled.first()
+        if (enabled.any { it.composer == Composer.TELEX }) serviceScope.launch(Dispatchers.IO) { telexEnglishWords }
         WordPredictorEngine.onDictionaryLoaded = { if (composing.isEmpty() || precomputedFor != composing) schedulePredictions() }
         // ответ системной проверки пришёл, пока слово ещё набирается, — обновить подсказки
         SystemSpell.onResult = { w -> if (composing == w || (composing.isEmpty() && tapWord?.word == w)) schedulePredictions() }
@@ -1203,7 +1213,7 @@ class ComposeKeyboardService : InputMethodService(),
     /** Финализирует текущее Telex-слово перед границей (пробел, пунктуация, Enter, смена языка/курсора). */
     private fun finalizeTelexBeforeBoundary(ic: InputConnection): String {
         if (!telexComposing) return composing
-        val committed = telex.commit()
+        val committed = telex.commit { word -> telexEnglishWords.binarySearch(word) >= 0 }
         if (committed != composing) applyTelexDiff(ic, committed)
         clearTelexState()
         rawComposing = ""

@@ -11,7 +11,7 @@ class TelexSuiteTest {
     private fun composeAndCommit(raw: String): String {
         val s = Telex.Session()
         for (ch in raw) s.input(ch)
-        return s.commit()
+        return s.commit(TelexEnglishTestWords::contains)
     }
 
     private fun simulateSentence(stream: String): String {
@@ -25,7 +25,7 @@ class TelexSuiteTest {
                 out.append(res)
                 wordLen = res.length
             } else {
-                val committed = s.commit()
+                val committed = s.commit(TelexEnglishTestWords::contains)
                 out.setLength(out.length - wordLen)
                 out.append(committed)
                 s.reset()

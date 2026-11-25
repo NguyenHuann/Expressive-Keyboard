@@ -158,7 +158,7 @@ class TelexTest {
         fun commitWord(raw: String): String {
             val s = Telex.Session()
             for (ch in raw) s.input(ch)
-            return s.commit()
+            return s.commit(TelexEnglishTestWords::contains)
         }
 
         assertEquals("saw", commitWord("saw"))

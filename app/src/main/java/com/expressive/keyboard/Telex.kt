@@ -410,6 +410,23 @@ object Telex {
         return out.toString()
     }
 
+    /** Phím dấu đã được hủy là lệnh sửa, không phải chữ cần đưa trở lại khi khôi phục. */
+    private fun restorationKeys(composition: List<Transformation>): String {
+        val cancelled = HashMap<Transformation, MutableSet<EffectType>>()
+        val kept = ArrayList<Transformation>(composition.size)
+        for (i in composition.indices.reversed()) {
+            val trans = composition[i]
+            val target = trans.target
+            if (trans.isUndo && target != null) {
+                cancelled.getOrPut(target) { HashSet() }.add(trans.rule.effectType)
+            }
+            if (target != null && cancelled[target]?.contains(trans.rule.effectType) == true) continue
+            kept.add(trans)
+        }
+        kept.reverse()
+        return flatten(kept, MODE_ENGLISH)
+    }
+
     private fun extractCvcAppendingTrans(appending: List<Transformation>): Triple<List<Transformation>, List<Transformation>, List<Transformation>> {
         // Quét từ cuối: phụ âm cuối (không phải nguyên âm) -> nguyên âm -> phụ âm đầu
         var idx = appending.size
@@ -792,6 +809,15 @@ object Telex {
                 displayBuf += ch
                 return displayBuf
             }
+            // Sau khi hủy sạch dấu trong một từ đã sai cấu trúc (cus, w...), phần tiếp theo
+            // là chữ nguyên văn. Không trượt sang âm tiết mới rồi đặt dấu lại như wword -> wỏd.
+            if (composition.any { it.isUndo } && displayBuf.none { isVietnameseRune(it.lowercaseChar()) } &&
+                !isValid(composition, false)
+            ) {
+                bypassed = true
+                displayBuf = restorationKeys(composition) + ch
+                return displayBuf
+            }
             val lower = ch.lowercaseChar()
             val upper = ch.isUpperCase()
             if (!canProcessKey(lower)) {
@@ -838,7 +864,7 @@ object Telex {
             val syllableInvalid = !isValid(curSyllable, false)
             if (viet != eng && lastWord.none { it.isUndo } && (prefixBroken || syllableInvalid)) {
                 bypassed = true
-                displayBuf = rawBuf.toString()
+                displayBuf = restorationKeys(composition)
                 return displayBuf
             }
 
@@ -933,7 +959,9 @@ object Telex {
             if (rawBuf.isEmpty() && displayBuf.isEmpty()) return ""
             if (bypassed) {
                 if (displayBuf.isNotEmpty()) displayBuf = displayBuf.dropLast(1)
-                if (rawBuf.isNotEmpty()) rawBuf.deleteCharAt(rawBuf.length - 1)
+                // Xóa theo chữ đang thấy: không giữ lại phím dấu ẩn để hồi sinh chữ đã xóa.
+                rawBuf.setLength(0)
+                rawBuf.append(displayBuf)
                 if (displayBuf.isEmpty()) reset()
                 return displayBuf
             }
@@ -962,14 +990,15 @@ object Telex {
                 return ""
             }
             rawBuf.setLength(0)
-            rawBuf.append(flatten(composition, MODE_ENGLISH))
+            rawBuf.append(restorationKeys(composition))
             displayBuf = flatten(composition, MODE_VIETNAMESE)
             return displayBuf
         }
 
         /** Kiểm tra âm tiết hoàn chỉnh khi ngắt từ (`Space`/`Enter`/dấu câu), tự trả nguyên văn nếu không hợp lệ. */
-        fun commit(): String {
-            if (bypassed || composition.isEmpty()) return displayBuf
+        fun commit(isEnglishWord: (String) -> Boolean = { false }): String {
+            if (bypassed) return finalizeRestoration(displayBuf, isEnglishWord)
+            if (composition.isEmpty()) return displayBuf
             val (_, lastWord) = extractLastWord(composition)
             if (isValidCommitWord(lastWord)) return displayBuf
 
@@ -999,7 +1028,16 @@ object Telex {
             }
 
             bypassed = true
-            displayBuf = rawBuf.toString()
+            return finalizeRestoration(restorationKeys(composition), isEnglishWord)
+        }
+
+        /** Chỉ dùng từ điển để phân biệt chữ lặp thật (issue) với phím hủy dấu (cusstom). */
+        private fun finalizeRestoration(restored: String, isEnglishWord: (String) -> Boolean): String {
+            val physical = rawBuf.toString()
+            displayBuf = if (physical != restored && physical.all { isAlpha(it) } &&
+                isEnglishWord(physical.lowercase(java.util.Locale.ROOT)) &&
+                !isEnglishWord(restored.lowercase(java.util.Locale.ROOT))
+            ) physical else restored
             return displayBuf
         }
 
