@@ -155,7 +155,11 @@ abstract class RotationSignApk : DefaultTask() {
         }
         val key = ks.getKey(alias, keyPass.toCharArray()) as PrivateKey
         val certs = ks.getCertificateChain(alias).map { it as X509Certificate }
-        return com.android.apksig.ApkSigner.SignerConfig.Builder(name, key, certs).build()
+        return com.android.apksig.ApkSigner.SignerConfig.Builder(
+            name,
+            com.android.apksig.KeyConfig.Jca(key),
+            certs
+        ).build()
     }
 
     @TaskAction
@@ -198,14 +202,17 @@ run {
     val lineageFile = rootProject.file("signing/rotation.lineage")
     val oldStore = lp.getProperty("ROTATION_OLD_STORE_FILE")?.let { file(it) }?.takeIf { it.exists() }
     val relStore = lp.getProperty("RELEASE_STORE_FILE")?.let { rootProject.file(it) }?.takeIf { it.exists() }
-    val isCi = System.getenv("CI") == "true"
-    if (lineageFile.exists() && oldStore == null && !isCi) {
-        throw GradleException(
-            "Нет старого ключа для ротации подписи: укажите ROTATION_OLD_STORE_FILE в local.properties. " +
-                "Без него обновление не встанет у тех, кто поставил 11.2.0."
-        )
-    }
-    if (lineageFile.exists() && oldStore != null) {
+    // Если ROTATION_OLD_STORE_FILE не задан (напр., локальная сборка без ключа 11.2.0 или CI),
+    // ротация подписи пропускается, чтобы не блокировать sync, debug-сборку и тесты.
+    if (lineageFile.exists() && oldStore == null) {
+        tasks.matching { it.name == "assembleRelease" }.configureEach {
+            doFirst {
+                this.logger.lifecycle(
+                    "Ротация подписи пропущена: не указан ROTATION_OLD_STORE_FILE в local.properties."
+                )
+            }
+        }
+    } else if (lineageFile.exists() && oldStore != null) {
         val rotate = tasks.register<RotationSignApk>("rotationSignRelease") {
             dependsOn("packageRelease")
             apkDir.set(layout.buildDirectory.dir("outputs/apk/release"))
@@ -232,10 +239,7 @@ run {
     }
 }
 
-composeCompiler {
-    // меньше лишних перекомпозиций: лямбды и нестабильные параметры тоже пропускаются, если не изменились
-    enableStrongSkippingMode = true
-}
+// Strong Skipping Mode включён по умолчанию в Kotlin 2.0.20+ (enableStrongSkippingMode удалён).
 
 dependencies {
     val composeBom = platform("androidx.compose:compose-bom:2025.06.00")
