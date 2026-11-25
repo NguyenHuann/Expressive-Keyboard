@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Android setup
         uses: ./.github/actions/android-setup
@@ -29,7 +29,7 @@ jobs:
 
       - name: Upload Release APK
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ExpressiveKeyboard-release-apk
           path: app/build/outputs/apk/release/*.apk
@@ -37,7 +37,7 @@ jobs:
 
       - name: Upload Debug APK
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ExpressiveKeyboard-debug-apk
           path: app/build/outputs/apk/debug/*.apk

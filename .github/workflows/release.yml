@@ -19,7 +19,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Android setup
         uses: ./.github/actions/android-setup
@@ -91,7 +91,7 @@ jobs:
         run: rm -rf keystore local.properties
 
       - name: Publish GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.meta.outputs.tag }}
           name: Expressive Keyboard ${{ steps.meta.outputs.tag }}
