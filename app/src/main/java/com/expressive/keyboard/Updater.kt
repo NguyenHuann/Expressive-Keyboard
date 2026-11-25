@@ -31,7 +31,7 @@ import java.net.URL
 
 // ============================================================================
 // ОБНОВЛЕНИЯ ПО ВОЗДУХУ (OTA)
-// Новая версия — это релиз на GitHub (kotlalipopus/Expressive-Keyboard) с приложенным APK.
+// Новая версия — это релиз на GitHub (NguyenHuann/Expressive-Keyboard) с приложенным APK.
 // Приложение смотрит последний релиз, сравнивает его номер со своим, скачивает APK и открывает
 // системную установку. Обновление встанет поверх, только если APK подписан тем же ключом.
 // ============================================================================
@@ -39,7 +39,7 @@ import java.net.URL
 data class UpdateInfo(val version: String, val notes: String, val apkUrl: String, val size: Long, val page: String)
 
 object Updater {
-    private const val REPO = "kotlalipopus/Expressive-Keyboard"
+    private const val REPO = "NguyenHuann/Expressive-Keyboard"
     private const val PREF_AUTO = "auto_update_check"
 
     /** Найденное обновление (null — его нет или ещё не проверяли). */
